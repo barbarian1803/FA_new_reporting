@@ -22,6 +22,7 @@
 include_once(dirname(__FILE__) . "/class.pdf.inc");
 include_once(dirname(__FILE__) . "/printer_class.inc");
 include_once($path_to_root . "/reporting/includes/reporting.inc");
+include_once($path_to_root . "/reporting/includes/HeaderBase.php");
 include_once($path_to_root . "/admin/db/company_db.inc");
 include_once($path_to_root . "/admin/db/fiscalyears_db.inc");
 include_once($path_to_root . "/admin/db/printers_db.inc");
@@ -399,14 +400,18 @@ class FrontReport extends Cpdf {
     function SetHeaderType($name) {
         $this->headerTmpl = $name;
     }
-
+    
+    function GetLanguageArray(){
+        return $this->l;
+    }
+    
     /*
       Header for sales/purchase documents
      */
 
     function Header2() {
         global $dflt_lang; // FIXME should be passed as params
-
+        
         $this->SetLang(@$this->formData['rep_lang'] ? $this->formData['rep_lang'] : $dflt_lang);
         $doctype = $this->formData['doctype'];
         $header2type = true;
@@ -456,7 +461,7 @@ class FrontReport extends Cpdf {
         $this->SetDrawColor(128, 128, 128);
 
         // Tell TCPDF that we want to use its alias system to track the total number of pages
-        $this->AliasNbPages();
+        //$this->AliasNbPages();
 
         // Footer
         if ($this->footerEnable) {
@@ -843,32 +848,45 @@ class FrontReport extends Cpdf {
     }
 
     function NewPage() {
-        if ($this->pageNumber == 0) {
-            // check if there is pdf header template for this report
-            // and set if it is found
-            $tmpl_pdf = find_custom_file("/reporting/forms/" . $this->headerTmpl . ".pdf");
-            if ($tmpl_pdf) {
-                $this->tmplSize = $this->setSourceFile($tmpl_pdf);
+        if ($this->headerTmpl instanceof HeaderBase) {
+            $this->NewPage2();
+        } else {
+            if ($this->pageNumber == 0) {
+                // check if there is pdf header template for this report
+                // and set if it is found
+                $tmpl_pdf = find_custom_file("/reporting/forms/" . $this->headerTmpl . ".pdf");
+                if ($tmpl_pdf) {
+                    $this->tmplSize = $this->setSourceFile($tmpl_pdf);
+                }
             }
-        }
 
+            $this->pageNumber++;
+            parent::newPage();
+
+            if ($this->tmplSize) {
+                $this->row = $this->pageHeight - $this->topMargin; // reset row
+                $id = $this->importPage(min($this->pageNumber, $this->tmplSize));
+                $this->useTemplate($id);
+            }
+
+            // include related php file if any
+            $tmpl_php = find_custom_file("/reporting/forms/" . $this->headerTmpl . ".php");
+            if ($tmpl_php) {
+                include($tmpl_php);
+            }
+
+            if (method_exists($this, $this->headerTmpl)) // draw predefined page layout if any
+                $this->{$this->headerTmpl}();
+        }
+    }
+
+    function NewPage2() {
+        if ($this->pageNumber == 0) {
+            $this->headerTmpl->firstPageHeader();
+        }
         $this->pageNumber++;
         parent::newPage();
-
-        if ($this->tmplSize) {
-            $this->row = $this->pageHeight - $this->topMargin; // reset row
-            $id = $this->importPage(min($this->pageNumber, $this->tmplSize));
-            $this->useTemplate($id);
-        }
-
-        // include related php file if any
-        $tmpl_php = find_custom_file("/reporting/forms/" . $this->headerTmpl . ".php");
-        if ($tmpl_php) {
-            include($tmpl_php);
-        }
-
-        if (method_exists($this, $this->headerTmpl)) // draw predefined page layout if any
-            $this->{$this->headerTmpl}();
+        $this->headerTmpl->drawHeader();
     }
 
     function End($email = 0, $subject = '') {
@@ -891,8 +909,8 @@ class FrontReport extends Cpdf {
             }
             // do not use standard filenames or your sensitive company data 
             // are world readable
-			$ori_fname = $dir . '/' . random_id() . '.pdf';
-            $fname = __DIR__."/../".$ori_fname;
+            $ori_fname = $dir . '/' . random_id() . '.pdf';
+            $fname = __DIR__ . "/../" . $ori_fname;
             $this->Output($fname, 'F');
 
             if ($email == 1) {
