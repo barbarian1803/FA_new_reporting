@@ -891,7 +891,7 @@ class FrontReport extends Cpdf {
 
     function End($email = 0, $subject = '') {
         global $SysPrefs, $path_to_root;
-        $rep_id = $this->rep_id;
+        
         if (!empty($SysPrefs->prefs['print_dialog_direct']))
             $this->includeJS("print();"); // force to open print dialog
 
@@ -911,8 +911,19 @@ class FrontReport extends Cpdf {
             // are world readable
             $ori_fname = $dir . '/' . random_id() . '.pdf';
             $fname = __DIR__ . "/../" . $ori_fname;
+            
+            
+            $temp = array();
+            foreach (get_object_vars($this) as $key=>$val){
+                $temp[$key] = $val;
+            }
+            
             $this->Output($fname, 'F');
-
+            
+            foreach($temp as $key=>$val){
+                $this->{$key} = $val;
+            }
+            
             if ($email == 1) {
                 $contactData = array();
                 if ($this->contactData)
@@ -980,7 +991,7 @@ class FrontReport extends Cpdf {
                 }
             }
             else {
-                $printer = get_report_printer(user_print_profile(), $rep_id);
+                $printer = get_report_printer(user_print_profile(), $this->rep_id);
                 if ($printer == false) {
                     if (in_ajax()) {
                         global $Ajax;
