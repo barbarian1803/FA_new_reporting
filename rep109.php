@@ -24,7 +24,6 @@ include_once($path_to_root . "/includes/date_functions.inc");
 include_once($path_to_root . "/includes/data_checks.inc");
 include_once($path_to_root . "/sales/includes/sales_db.inc");
 include_once($path_to_root . "/taxes/tax_calc.inc");
-include_once($path_to_root . "/reporting/includes/Header2.php");
 
 //----------------------------------------------------------------------------------------------------
 
@@ -80,7 +79,7 @@ function print_sales_orders()
 		$branch = get_branch($myrow["branch_code"]);
 		if ($email == 1)
 			$rep = new FrontReport("", "", user_pagesize(), 9, $orientation);
-		$rep->SetHeaderType(new Header2($rep));
+		$rep->SetHeaderType("Header2");
 		$rep->currency = $cur;
 		$rep->Font();
 		if ($print_as_quote == 1)
@@ -105,7 +104,7 @@ function print_sales_orders()
 
 		$contacts = get_branch_contacts($branch['branch_code'], 'order', $branch['debtor_no'], true);
 		$rep->SetCommonData($myrow, $branch, $myrow, $baccount, ST_SALESORDER, $contacts);
-		$rep->SetHeaderType(new Header2($rep));
+		$rep->SetHeaderType("Header2");
 		$rep->NewPage();
 
 		$result = get_sales_order_details($i, ST_SALESORDER);
