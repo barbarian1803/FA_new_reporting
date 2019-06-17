@@ -8,7 +8,7 @@ Some differencec in the pdf are seen with margin on the PDF.
 
 If you want to try this, just download this repository and replace the existing reporting folder.
 
-New functionality header class dependency injection.
+# New functionality header class dependency injection.
 
 Now you can create your own header file and then inject it to the report by extending class HeaderBase (reporting/includes/HeaderBase.php).
 
